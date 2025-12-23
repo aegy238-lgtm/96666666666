@@ -7,7 +7,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, '');
-  const apiKey = env.GEMINI_API_KEY || env.VITE_GEMINI_API_KEY || "";
+  // البحث عن المفتاح في متغيرات البيئة الخاصة بالسيرفر أو ملف .env
+  const apiKey = env.GEMINI_API_KEY || env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || "";
   
   return {
     plugins: [react()],
@@ -22,14 +23,9 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: 'dist',
       assetsDir: 'assets',
+      emptyOutDir: true,
       sourcemap: false,
-      minify: 'esbuild',
-      // Simplified build for production reliability
-      rollupOptions: {
-        output: {
-          format: 'es',
-        }
-      }
+      minify: 'esbuild'
     }
   };
 });
