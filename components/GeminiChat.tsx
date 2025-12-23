@@ -1,15 +1,18 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI } from '@google/genai';
-import { ChatMessage } from '../types';
+import { ChatMessage, Language } from '../types';
+import { UI_TRANSLATIONS } from '../constants';
 
 interface Props {
   context: string;
+  lang: Language;
 }
 
-const GeminiChat: React.FC<Props> = ({ context }) => {
+const GeminiChat: React.FC<Props> = ({ context, lang }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'model', text: 'أهلاً بك في SAWA! كيف يمكنني مساعدتك في فهم نظام الأرباح المحدث اليوم؟' }
+    { role: 'model', text: UI_TRANSLATIONS.chat_welcome[lang] }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -20,6 +23,11 @@ const GeminiChat: React.FC<Props> = ({ context }) => {
   };
 
   useEffect(scrollToBottom, [messages]);
+  
+  // Update welcome message when language changes
+  useEffect(() => {
+    setMessages([{ role: 'model', text: UI_TRANSLATIONS.chat_welcome[lang] }]);
+  }, [lang]);
 
   const handleSendMessage = async () => {
     if (!input.trim() || loading) return;
@@ -30,41 +38,40 @@ const GeminiChat: React.FC<Props> = ({ context }) => {
     setLoading(true);
 
     try {
-      // Create a fresh instance for the call to ensure up-to-date API key usage
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
       
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: userMessage,
         config: {
-          systemInstruction: `أنت مساعد ذكي لتطبيق SAWA LIVE. استخدم المعلومات التالية للإجابة على المستخدم بالعربية وبشكل مختصر وودود. السياق المحدث: ${context}`,
+          systemInstruction: `You are an AI assistant for SAWA LIVE. Use the following context to answer the user. Current Language: ${lang}. Context: ${context}. Keep your response concise and friendly in the user's language.`,
           temperature: 0.7,
         }
       });
 
-      const reply = response.text || 'عذراً، لم أستطع فهم طلبك بناءً على البيانات المتوفرة.';
+      const reply = response.text || 'Error processing request.';
       setMessages(prev => [...prev, { role: 'model', text: reply }]);
     } catch (error) {
       console.error('Chat error:', error);
-      setMessages(prev => [...prev, { role: 'model', text: 'حدث خطأ في الاتصال، يرجى المحاولة لاحقاً.' }]);
+      setMessages(prev => [...prev, { role: 'model', text: 'Connection error, please try again later.' }]);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed bottom-4 md:bottom-8 left-4 md:left-8 z-[100] flex flex-col items-start">
+    <div className={`fixed bottom-4 md:bottom-8 z-[100] flex flex-col ${lang === 'ar' ? 'left-4 md:left-8 items-start' : 'right-4 md:right-8 items-end'}`}>
       {isOpen && (
         <div className="mb-4 w-[calc(100vw-2rem)] max-w-[400px] h-[70vh] md:h-[550px] glass rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-white/20 animate-in fade-in slide-in-from-bottom-10 duration-300">
           <div className="p-4 md:p-5 bg-gradient-to-r from-cyan-600/80 to-blue-700/80 backdrop-blur-md flex justify-between items-center border-b border-white/10">
-            <div className="flex items-center gap-3">
+            <div className={`flex items-center gap-3 ${lang === 'ar' ? 'flex-row' : 'flex-row-reverse'}`}>
               <div className="relative">
                 <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-xl">🤖</div>
                 <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#1e293b]" />
               </div>
-              <div>
-                <h4 className="font-bold text-sm md:text-base">دعم SAWA المباشر</h4>
-                <p className="text-[10px] text-cyan-200/70">متصل الآن لمساعدتك</p>
+              <div className={lang === 'ar' ? 'text-right' : 'text-left'}>
+                <h4 className="font-bold text-sm md:text-base">SAWA LIVE Support</h4>
+                <p className="text-[10px] text-cyan-200/70">Online</p>
               </div>
             </div>
             <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
@@ -76,7 +83,7 @@ const GeminiChat: React.FC<Props> = ({ context }) => {
           
           <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-black/10">
             {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-start' : 'justify-end animate-in fade-in slide-in-from-right-2'}`}>
+              <div key={i} className={`flex ${msg.role === 'user' ? (lang === 'ar' ? 'justify-start' : 'justify-end') : (lang === 'ar' ? 'justify-end' : 'justify-start')}`}>
                 <div className={`max-w-[85%] p-4 rounded-2xl text-[13px] md:text-sm shadow-sm ${
                   msg.role === 'user' 
                   ? 'bg-gradient-to-br from-cyan-600 to-blue-600 text-white rounded-tr-none' 
@@ -87,7 +94,7 @@ const GeminiChat: React.FC<Props> = ({ context }) => {
               </div>
             ))}
             {loading && (
-              <div className="flex justify-end">
+              <div className={`flex ${lang === 'ar' ? 'justify-end' : 'justify-start'}`}>
                 <div className="bg-white/10 p-4 rounded-2xl rounded-tl-none border border-white/10 flex gap-1 items-center">
                   <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
                   <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
@@ -103,15 +110,15 @@ const GeminiChat: React.FC<Props> = ({ context }) => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder="اكتب سؤالك هنا..."
-              className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all placeholder:text-slate-500"
+              placeholder={UI_TRANSLATIONS.chat_placeholder[lang]}
+              className={`flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all placeholder:text-slate-500 ${lang === 'ar' ? 'text-right' : 'text-left'}`}
             />
             <button 
               onClick={handleSendMessage}
               disabled={loading || !input.trim()}
               className="bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-700 w-12 h-12 rounded-2xl flex items-center justify-center transition-all active:scale-90"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 rotate-180" viewBox="0 0 20 20" fill="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${lang === 'ar' ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
                 <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
               </svg>
             </button>

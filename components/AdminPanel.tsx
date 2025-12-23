@@ -108,12 +108,12 @@ const AdminPanel: React.FC<Props> = ({ content, onSave, onClose, onReset }) => {
                 type="text"
                 value={localContent.whatsappNumber || ''}
                 onChange={(e) => setLocalContent(prev => ({ ...prev, whatsappNumber: e.target.value.replace(/\D/g,'') || null }))}
-                placeholder="393921700020"
+                placeholder="8613147065068"
                 className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-cyan-500/50 outline-none transition-all text-left dir-ltr"
               />
               <span className="text-xl">📱</span>
             </div>
-            <p className="text-[10px] text-slate-500">أدخل الرقم مع رمز الدولة وبدون علامة + (مثال: 201234567890)</p>
+            <p className="text-[10px] text-slate-500">أدخل الرقم مع رمز الدولة وبدون علامة + (مثال: 8613147065068)</p>
           </section>
 
           <section className="space-y-4">
